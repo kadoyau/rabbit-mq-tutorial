@@ -15,7 +15,7 @@ class Consumer {
         setTimeout(() => {
           console.log('Done');
         }, secs * 1000);
-      }, { noAck: true });
+      }, { noAck: false });
       // await ch.close();
       // await conn.close();
     } catch (err) {
