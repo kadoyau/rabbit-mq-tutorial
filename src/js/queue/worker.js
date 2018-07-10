@@ -9,11 +9,13 @@ class Consumer {
       // publisherより先に開始するのでqueueがあるか確認する
       const q = 'task_queue';
       await ch.assertQueue(q, { durable: true });
+      await ch.prefetch(1);
       await ch.consume(q, (msg) => {
         const secs = msg.content.toString().split('.').length - 1;
         console.log('Recv: %s', msg.content.toString());
         setTimeout(() => {
           console.log('Done');
+          ch.ack(msg);
         }, secs * 1000);
       }, { noAck: false });
       // await ch.close();
