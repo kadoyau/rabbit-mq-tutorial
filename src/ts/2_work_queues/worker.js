@@ -1,4 +1,3 @@
-// @flow
 const amqp = require('amqplib');
 
 class Consumer {
