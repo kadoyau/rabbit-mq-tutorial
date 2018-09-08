@@ -6,7 +6,7 @@ class Publisher {
       const conn = await amqp.connect('amqp://localhost');
       const ch = await conn.createChannel();
       const q = 'hello';
-      await ch.assertQueue(q, {durable: false});
+      await ch.assertQueue(q, { durable: false });
       await ch.sendToQueue(q, Buffer.from('Hello World'));
       console.log('send!');
 
