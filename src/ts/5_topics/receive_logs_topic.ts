@@ -10,15 +10,15 @@ class ReceiverTopic {
     try {
       const args = process.argv.slice(2);
       if (args.length === 0) {
-        console.log('Usage: receive_logs_direct.js [info] [warning] [error]');
+        console.log('Usage: receive_logs_topic.js <facility>.<severity>');
         process.exit(1);
       }
       const conn = await amqp.connect('amqp://localhost');
       const ch = await conn.createChannel();
 
-      const exchange = 'direct_logs';
-      // type=directなexchangeを作成する
-      ch.assertExchange(exchange, 'direct', { durable: false });
+      const exchange = 'topic_logs';
+      // type=topicなexchangeを作成する
+      ch.assertExchange(exchange, 'topic', { durable: false });
 
       const queueName = '';
       // キュー名が空なので、RabbitMQはランダムなキュー名を返してくれる
