@@ -4,32 +4,53 @@ const amqp = require('amqplib');
  * pub/subのpublisher
  * exchangeにメッセージをpublishする
  */
-class EmitterTopic {
+class RpcClient {
   static async emit() {
     try {
+      const args = process.argv.slice(2);
+      if (args.length === 0) {
+        console.log('Usage: rpc_client.js num');
+        process.exit(1);
+      }
       const conn = await amqp.connect('amqp://localhost');
       const ch = await conn.createChannel();
+      const callbackQueue = await ch.assertQueue('', { exclusive: true });
 
-      const exchange = 'topic_logs';
-      const args = process.argv.slice(2);
-      const routingKey = (args.length > 0) ? args[0] : 'anonymous.info';
-      const msg = process.argv.slice(3).join(' ') || 'Hello World!';
+      const correlationId = this.generateUUid();
+      const num = parseInt(args[0], 10);
 
-      // exchangeを作成する
-      ch.assertExchange(exchange, 'topic', { durable: false });
+      console.log(' [x] Requesting fib(%d)', num);
 
-      // logs exchangeにメッセージをつむ。特定のキューにはメッセージを入れない
-      ch.publish(exchange, routingKey, Buffer.from(msg), { persistent: true });
-      console.log('[x] Sent %s: "%s"',routingKey, msg);
+      // レスポンス先に指定したキューにつまれたレスポンスを受け取る
+      ch.consume(callbackQueue.queue, (msg: any) => {
+        if (msg.properties.correlationId === correlationId) {
+          console.log(' [.] Got %s', msg.content.toString());
+          setTimeout(() => {
+            conn.close();
+            process.exit(0);
+          }, 500);
+        }
+      }, { noAck: true });
 
-      setTimeout(() => {
-        ch.close();
-        conn.close();
-      }, 500);
+      // キューにjobを積む
+      const queueName = 'rpc_queue';
+      ch.sendToQueue(
+        queueName,
+        Buffer.from(num.toString()),
+        // ユニークなIDとレスポンス先のキューを指定する
+        { correlationId: correlationId, replyTo: callbackQueue.queue }
+      );
+
     } catch (err) {
       console.log(err);
     }
   }
+
+  private static generateUUid() {
+    return Math.random().toString()
+      + Math.random().toString()
+      + Math.random().toString();
+  }
 }
 
-EmitterTopic.emit();
+RpcClient.emit();
